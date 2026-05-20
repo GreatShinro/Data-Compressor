@@ -51,25 +51,28 @@ with tab_compress:
         raw = uploaded.read()
         if len(raw) > 10 * 1024 * 1024:
             st.error("File too large. Maximum allowed size is 10 MB.")
-            st.stop()
-        st.session_state["c_raw"] = raw
-        st.session_state["c_name"] = uploaded.name
-        ent = entropy_bits(raw[:8192])
-        st.caption(
-            f"**{uploaded.name}** · {human_size(len(raw))} · "
-            f"Entropy: {ent:.3f} bits/byte"
-        )
+        else:
+            st.session_state["c_raw"] = raw
+            st.session_state["c_name"] = uploaded.name
+            ent = entropy_bits(raw[:8192])
+            st.caption(
+                f"**{uploaded.name}** · {human_size(len(raw))} · "
+                f"Entropy: {ent:.3f} bits/byte"
+            )
 
     st.subheader("2. Choose algorithm")
     algo = st.radio("Algorithm", ALGO_OPTIONS, horizontal=True, key="c_algo",
                     label_visibility="collapsed")
     st.caption(ALGO_DESCS[algo])
 
-    if st.button("⬇ Compress", type="primary", disabled=not uploaded):
-        raw = st.session_state.get("c_raw", b"")
+    if st.button("⬇ Compress", type="primary", disabled="c_raw" not in st.session_state):
+        raw = st.session_state["c_raw"]
         with st.spinner(f"Compressing with {algo}…"):
             compressed, m = CompressionEngine.compress_bytes(raw, algo)
+        st.session_state["c_result"] = (compressed, m, st.session_state["c_name"])
 
+    if "c_result" in st.session_state:
+        compressed, m, fname = st.session_state["c_result"]
         st.success(
             f"Done · {human_size(m['original_size'])} → "
             f"{human_size(m['compressed_size'])} · "
@@ -77,18 +80,15 @@ with tab_compress:
             f"Algorithm: **{m['algorithm']}** · "
             f"{m['compress_time']:.4f}s"
         )
-
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Original",   human_size(m["original_size"]))
         col2.metric("Compressed", human_size(m["compressed_size"]))
         col3.metric("Ratio",      f"{m['ratio']:.2f}:1")
         col4.metric("Saved",      f"{m['saving_pct']:.1f}%")
-
-        out_name = uploaded.name + COMPRESSED_EXT
         st.download_button(
             "⬇ Download compressed file",
             data=compressed,
-            file_name=out_name,
+            file_name=fname + COMPRESSED_EXT,
             mime="application/octet-stream",
         )
 
