@@ -49,6 +49,9 @@ with tab_compress:
 
     if uploaded:
         raw = uploaded.read()
+        if len(raw) > 10 * 1024 * 1024:
+            st.error("File too large. Maximum allowed size is 10 MB.")
+            st.stop()
         ent = entropy_bits(raw[:8192])
         st.caption(
             f"**{uploaded.name}** · {human_size(len(raw))} · "
