@@ -43,9 +43,7 @@ tab_compress, tab_decompress, tab_about = st.tabs(["⬇ Compress", "⬆ Decompre
 
 # ── COMPRESS TAB ──────────────────────────────────────────────────────────────
 with tab_compress:
-    st.subheader("1. Upload a file")
-    uploaded = st.file_uploader("Choose any file", key="c_upload",
-                                label_visibility="collapsed")
+    uploaded = st.file_uploader("Upload a file to compress", key="c_upload")
 
     if uploaded:
         raw = uploaded.read()
@@ -54,21 +52,19 @@ with tab_compress:
         else:
             st.session_state["c_raw"] = raw
             st.session_state["c_name"] = uploaded.name
+            st.session_state.pop("c_result", None)
             ent = entropy_bits(raw[:8192])
             st.caption(
                 f"**{uploaded.name}** · {human_size(len(raw))} · "
                 f"Entropy: {ent:.3f} bits/byte"
             )
 
-    st.subheader("2. Choose algorithm")
-    algo = st.radio("Algorithm", ALGO_OPTIONS, horizontal=True, key="c_algo",
-                    label_visibility="collapsed")
+    algo = st.radio("Algorithm", ALGO_OPTIONS, horizontal=True, key="c_algo")
     st.caption(ALGO_DESCS[algo])
 
     if st.button("⬇ Compress", type="primary", disabled="c_raw" not in st.session_state):
-        raw = st.session_state["c_raw"]
         with st.spinner(f"Compressing with {algo}…"):
-            compressed, m = CompressionEngine.compress_bytes(raw, algo)
+            compressed, m = CompressionEngine.compress_bytes(st.session_state["c_raw"], algo)
         st.session_state["c_result"] = (compressed, m, st.session_state["c_name"])
 
     if "c_result" in st.session_state:
@@ -95,40 +91,40 @@ with tab_compress:
 
 # ── DECOMPRESS TAB ────────────────────────────────────────────────────────────
 with tab_decompress:
-    st.subheader("1. Upload a .fudmc file")
-    uploaded_d = st.file_uploader(f"Choose a {COMPRESSED_EXT} file", key="d_upload",
-                                  label_visibility="collapsed")
+    uploaded_d = st.file_uploader(f"Upload a {COMPRESSED_EXT} file to decompress", key="d_upload")
 
     if uploaded_d:
-        st.caption(f"**{uploaded_d.name}** · {human_size(uploaded_d.size)}")
+        st.session_state["d_raw"] = uploaded_d.read()
+        st.session_state["d_name"] = uploaded_d.name
+        st.session_state.pop("d_result", None)
+        st.caption(f"**{uploaded_d.name}** · {human_size(len(st.session_state['d_raw']))}")
 
-    if st.button("⬆ Decompress", type="primary", disabled=not uploaded_d):
-        raw_d = uploaded_d.read()
+    if st.button("⬆ Decompress", type="primary", disabled="d_raw" not in st.session_state):
         try:
             with st.spinner("Decompressing…"):
-                data, orig_filename, m = CompressionEngine.decompress_bytes(raw_d)
-
-            st.success(
-                f"Done · {human_size(m['compressed_size'])} → "
-                f"{human_size(m['original_size'])} · "
-                f"Algorithm: **{m['algorithm']}** · "
-                f"{m['decompress_time']:.4f}s"
-            )
-
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Compressed",  human_size(m["compressed_size"]))
-            col2.metric("Restored",    human_size(m["original_size"]))
-            col3.metric("Ratio",       f"{m['ratio']:.2f}:1")
-
-            out_name = orig_filename or uploaded_d.name.removesuffix(COMPRESSED_EXT)
-            st.download_button(
-                "⬇ Download restored file",
-                data=data,
-                file_name=out_name,
-                mime="application/octet-stream",
-            )
+                data, orig_filename, m = CompressionEngine.decompress_bytes(st.session_state["d_raw"])
+            st.session_state["d_result"] = (data, orig_filename, m, st.session_state["d_name"])
         except ValueError as e:
             st.error(str(e))
+
+    if "d_result" in st.session_state:
+        data, orig_filename, m, dname = st.session_state["d_result"]
+        st.success(
+            f"Done · {human_size(m['compressed_size'])} → "
+            f"{human_size(m['original_size'])} · "
+            f"Algorithm: **{m['algorithm']}** · "
+            f"{m['decompress_time']:.4f}s"
+        )
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Compressed",  human_size(m["compressed_size"]))
+        col2.metric("Restored",    human_size(m["original_size"]))
+        col3.metric("Ratio",       f"{m['ratio']:.2f}:1")
+        st.download_button(
+            "⬇ Download restored file",
+            data=data,
+            file_name=orig_filename or dname.removesuffix(COMPRESSED_EXT),
+            mime="application/octet-stream",
+        )
 
 
 # ── ABOUT TAB ─────────────────────────────────────────────────────────────────
