@@ -52,6 +52,8 @@ with tab_compress:
         if len(raw) > 10 * 1024 * 1024:
             st.error("File too large. Maximum allowed size is 10 MB.")
             st.stop()
+        st.session_state["c_raw"] = raw
+        st.session_state["c_name"] = uploaded.name
         ent = entropy_bits(raw[:8192])
         st.caption(
             f"**{uploaded.name}** · {human_size(len(raw))} · "
@@ -64,6 +66,7 @@ with tab_compress:
     st.caption(ALGO_DESCS[algo])
 
     if st.button("⬇ Compress", type="primary", disabled=not uploaded):
+        raw = st.session_state.get("c_raw", b"")
         with st.spinner(f"Compressing with {algo}…"):
             compressed, m = CompressionEngine.compress_bytes(raw, algo)
 
