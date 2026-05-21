@@ -34,11 +34,10 @@ ALGO_DESCS = {
     "Lempel-Ziv-Welch (LZW)":     "Dictionary-based compression. Best for structured/repetitive data.",
 }
 
-mode = st.radio("Mode", ["⬇ Compress", "⬆ Decompress", "ℹ About"], horizontal=True)
-st.divider()
+tab_compress, tab_decompress, tab_about = st.tabs(["⬇ Compress", "⬆ Decompress", "ℹ About"])
 
 # ── COMPRESS ──────────────────────────────────────────────────────────────────
-if mode == "⬇ Compress":
+with tab_compress:
     uploaded = st.file_uploader("Choose any file", key="c_upload")
 
     if uploaded:
@@ -53,7 +52,7 @@ if mode == "⬇ Compress":
             ent = entropy_bits(raw[:8192])
             st.caption(f"**{uploaded.name}** · {human_size(len(raw))} · Entropy: {ent:.3f} bits/byte")
 
-    algo = st.radio("Algorithm", ALGO_OPTIONS, horizontal=True, key="c_algo")
+    algo = st.selectbox("Algorithm", ALGO_OPTIONS, key="c_algo")
     st.caption(ALGO_DESCS[algo])
 
     if st.button("⬇ Compress", type="primary", disabled="c_raw" not in st.session_state):
@@ -80,7 +79,7 @@ if mode == "⬇ Compress":
         )
 
 # ── DECOMPRESS ────────────────────────────────────────────────────────────────
-elif mode == "⬆ Decompress":
+with tab_decompress:
     uploaded_d = st.file_uploader(f"Choose a {COMPRESSED_EXT} file", key="d_upload")
 
     if uploaded_d:
@@ -116,7 +115,7 @@ elif mode == "⬆ Decompress":
         )
 
 # ── ABOUT ─────────────────────────────────────────────────────────────────────
-else:
+with tab_about:
     st.markdown(f"""
 **DataCompressor** `v{APP_VERSION}`
 
