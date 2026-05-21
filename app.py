@@ -34,7 +34,7 @@ ALGO_DESCS = {
     "Lempel-Ziv-Welch (LZW)":     "Dictionary-based compression. Best for structured/repetitive data.",
 }
 
-tab_compress, tab_decompress, tab_about = st.tabs(["⬇ Compress", "⬆ Decompress", "ℹ About"])
+tab_compress, tab_decompress, tab_history, tab_about = st.tabs(["⬇ Compress", "⬆ Decompress", "🕓 History", "ℹ About"])
 
 # ── COMPRESS ──────────────────────────────────────────────────────────────────
 with tab_compress:
@@ -113,6 +113,31 @@ with tab_decompress:
             file_name=orig_filename or dname.removesuffix(COMPRESSED_EXT),
             mime="application/octet-stream",
         )
+
+# ── HISTORY ───────────────────────────────────────────────────────────────────
+with tab_history:
+    import pandas as pd
+
+    mock_history = [
+        {"Timestamp": "2026-05-21 08:10:02", "File": "report.txt",    "Algorithm": "Huffman Coding",            "Original": "128 KB", "Compressed": "74 KB",  "Saved": "42.2%", "Time (s)": 0.0031, "Action": "Compress"},
+        {"Timestamp": "2026-05-21 07:55:14", "File": "data.csv",      "Algorithm": "Lempel-Ziv-Welch (LZW)",    "Original": "512 KB", "Compressed": "198 KB", "Saved": "61.3%", "Time (s)": 0.0089, "Action": "Compress"},
+        {"Timestamp": "2026-05-21 07:40:33", "File": "image.bmp",     "Algorithm": "Run-Length Encoding (RLE)", "Original": "2.1 MB", "Compressed": "1.8 MB", "Saved": "14.3%", "Time (s)": 0.0012, "Action": "Compress"},
+        {"Timestamp": "2026-05-21 07:30:05", "File": "report.txt",    "Algorithm": "Huffman Coding",            "Original": "128 KB", "Compressed": "74 KB",  "Saved": "42.2%", "Time (s)": 0.0028, "Action": "Decompress"},
+        {"Timestamp": "2026-05-20 22:15:47", "File": "archive.log",   "Algorithm": "Auto (Best Fit)",           "Original": "340 KB", "Compressed": "112 KB", "Saved": "67.1%", "Time (s)": 0.0154, "Action": "Compress"},
+        {"Timestamp": "2026-05-20 21:03:19", "File": "source.py",     "Algorithm": "Huffman Coding",            "Original": "18 KB",  "Compressed": "11 KB",  "Saved": "38.9%", "Time (s)": 0.0009, "Action": "Compress"},
+        {"Timestamp": "2026-05-20 20:48:52", "File": "config.json",   "Algorithm": "Lempel-Ziv-Welch (LZW)",   "Original": "6 KB",   "Compressed": "3 KB",   "Saved": "50.0%", "Time (s)": 0.0004, "Action": "Compress"},
+        {"Timestamp": "2026-05-20 19:22:11", "File": "audio.wav",     "Algorithm": "Run-Length Encoding (RLE)","Original": "4.4 MB", "Compressed": "4.1 MB", "Saved": "6.8%",  "Time (s)": 0.0021, "Action": "Compress"},
+    ]
+
+    df = pd.DataFrame(mock_history)
+
+    col_a, col_b, col_c = st.columns(3)
+    col_a.metric("Total Operations", len(df))
+    col_b.metric("Files Compressed", len(df[df["Action"] == "Compress"]))
+    col_c.metric("Files Decompressed", len(df[df["Action"] == "Decompress"]))
+
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.caption("⚠ Mock data — live history tracking not yet implemented.")
 
 # ── ABOUT ─────────────────────────────────────────────────────────────────────
 with tab_about:
